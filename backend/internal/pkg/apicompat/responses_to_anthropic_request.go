@@ -143,12 +143,11 @@ func convertResponsesInputToAnthropic(inputRaw json.RawMessage) (json.RawMessage
 				Content: blockJSON,
 			})
 
-		case item.Type == "function_call_output":
-			// function_call_output → user message with tool_result block
-			outputContent := item.Output
-			if outputContent == "" {
-				outputContent = "(empty)"
-			}
+		case item.Type == "function_call_output",
+			item.Type == "mcp_tool_call_output",
+			item.Type == "custom_tool_call_output":
+			// Tool output → user message with tool_result block
+			outputContent := toolOutputAsString(item.Output)
 			contentJSON, _ := json.Marshal(outputContent)
 			block := AnthropicContentBlock{
 				Type:      "tool_result",
@@ -212,7 +211,7 @@ func extractTextFromContent(raw json.RawMessage) string {
 	if err := json.Unmarshal(raw, &parts); err == nil {
 		var texts []string
 		for _, p := range parts {
-			if (p.Type == "input_text" || p.Type == "output_text" || p.Type == "text") && p.Text != "" {
+			if (p.Type == "input_text" || p.Type == "output_text" || p.Type == "text" || p.Type == "reasoning_text" || p.Type == "summary_text") && p.Text != "" {
 				texts = append(texts, p.Text)
 			}
 		}

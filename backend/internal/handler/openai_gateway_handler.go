@@ -419,7 +419,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		clientIP := ip.GetClientIP(c)
 		requestPayloadHash := service.HashUsageRequestPayload(body)
 		inboundEndpoint := GetInboundEndpoint(c)
-		upstreamEndpoint := GetUpstreamEndpoint(c, account.Platform)
+		upstreamEndpoint := result.UpstreamEndpoint
+		if upstreamEndpoint == "" {
+			upstreamEndpoint = GetUpstreamEndpoint(c, account.Platform)
+		}
 
 		// 使用量记录通过有界 worker 池提交，避免请求热路径创建无界 goroutine。
 		h.submitOpenAIUsageRecordTask(result, func(ctx context.Context) {
@@ -794,7 +797,10 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		clientIP := ip.GetClientIP(c)
 		requestPayloadHash := service.HashUsageRequestPayload(body)
 		inboundEndpoint := GetInboundEndpoint(c)
-		upstreamEndpoint := GetUpstreamEndpoint(c, account.Platform)
+		upstreamEndpoint := result.UpstreamEndpoint
+		if upstreamEndpoint == "" {
+			upstreamEndpoint = GetUpstreamEndpoint(c, account.Platform)
+		}
 
 		h.submitOpenAIUsageRecordTask(result, func(ctx context.Context) {
 			if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
@@ -1358,7 +1364,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			}
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
 			inboundEndpoint := GetInboundEndpoint(c)
-			upstreamEndpoint := GetUpstreamEndpoint(c, account.Platform)
+			upstreamEndpoint := result.UpstreamEndpoint
+		if upstreamEndpoint == "" {
+			upstreamEndpoint = GetUpstreamEndpoint(c, account.Platform)
+		}
 			h.submitOpenAIUsageRecordTask(result, func(taskCtx context.Context) {
 				if err := h.gatewayService.RecordUsage(taskCtx, &service.OpenAIRecordUsageInput{
 					Result:             result,

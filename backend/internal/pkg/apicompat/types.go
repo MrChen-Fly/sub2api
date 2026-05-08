@@ -210,17 +210,22 @@ type ResponsesInputItem struct {
 	// type=function_call
 	CallID    string `json:"call_id,omitempty"`
 	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 	Arguments string `json:"arguments,omitempty"`
 	ID        string `json:"id,omitempty"`
 
-	// type=function_call_output
-	Output string `json:"output,omitempty"`
+	// type=function_call_output / mcp_tool_call_output / custom_tool_call_output
+	Output json.RawMessage `json:"output,omitempty"`
+
+	// type=reasoning
+	EncryptedContent string             `json:"encrypted_content,omitempty"`
+	Summary          []ResponsesSummary `json:"summary,omitempty"`
 }
 
 // ResponsesContentPart is a typed content part in a Responses message.
 type ResponsesContentPart struct {
 	Type     string `json:"type"` // "input_text" | "output_text" | "input_image"
-	Text     string `json:"text,omitempty"`
+	Text     string `json:"text"`
 	ImageURL string `json:"image_url,omitempty"` // data URI for input_image
 }
 
@@ -247,6 +252,10 @@ type ResponsesResponse struct {
 
 	// Error is present when status="failed"
 	Error *ResponsesError `json:"error,omitempty"`
+
+	// EndTurn signals whether the model has more to say.
+	// false → model expects to continue (e.g. has pending tool calls).
+	EndTurn *bool `json:"end_turn,omitempty"`
 }
 
 // ResponsesError describes an error in a failed response.
@@ -267,7 +276,7 @@ type ResponsesOutput struct {
 	// type=message
 	ID      string                 `json:"id,omitempty"`
 	Role    string                 `json:"role,omitempty"`
-	Content []ResponsesContentPart `json:"content,omitempty"`
+	Content []ResponsesContentPart `json:"content"`
 	Status  string                 `json:"status,omitempty"`
 
 	// type=reasoning
@@ -277,6 +286,7 @@ type ResponsesOutput struct {
 	// type=function_call
 	CallID    string `json:"call_id,omitempty"`
 	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 	Arguments string `json:"arguments,omitempty"`
 
 	// type=web_search_call
@@ -331,9 +341,12 @@ type ResponsesStreamEvent struct {
 	// response.output_item.added / response.output_item.done
 	Item *ResponsesOutput `json:"item,omitempty"`
 
+	// response.content_part.added / response.content_part.done
+	Part *ResponsesContentPart `json:"part,omitempty"`
+
 	// response.output_text.delta / response.output_text.done
 	OutputIndex  int    `json:"output_index,omitempty"`
-	ContentIndex int    `json:"content_index,omitempty"`
+	ContentIndex int    `json:"content_index"`
 	Delta        string `json:"delta,omitempty"`
 	Text         string `json:"text,omitempty"`
 	ItemID       string `json:"item_id,omitempty"`

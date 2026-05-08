@@ -73,3 +73,17 @@ func ResolveResponsesSupport(extra map[string]any) AccountResponsesSupport {
 func ShouldUseResponsesAPI(extra map[string]any) bool {
 	return ResolveResponsesSupport(extra) != ResponsesSupportNo
 }
+
+// IsResponsesSupportKnownConfirmed 判断入站 /v1/responses 请求是否应走 Responses
+// 原生路径（而非降级到 Chat Completions 转换）。
+//
+// 仅当账号已探测且明确确认上游支持 /v1/responses 时返回 true。
+// 未探测（unknown）和明确不支持（no）均返回 false——Chat Completions 是所有
+// OpenAI 兼容上游的共同基准，比 Responses 更安全。
+//
+// 与 ShouldUseResponsesAPI 的区别：本函数用于 /responses 入站端点的路由决策，
+// 采用更保守的策略（unknown → 走 Chat）；ShouldUseResponsesAPI 用于
+// /chat/completions 入站端点的路由决策，保留旧行为（unknown → 走 Responses）。
+func IsResponsesSupportKnownConfirmed(extra map[string]any) bool {
+	return ResolveResponsesSupport(extra) == ResponsesSupportYes
+}

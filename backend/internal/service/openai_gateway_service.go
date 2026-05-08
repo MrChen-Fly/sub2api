@@ -24,6 +24,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/apicompat"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/openai_compat"
 	"github.com/Wei-Shaw/sub2api/internal/util/responseheaders"
 	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
 	"github.com/cespare/xxhash/v2"
@@ -232,10 +233,11 @@ type OpenAIForwardResult struct {
 	Stream          bool
 	OpenAIWSMode    bool
 	ResponseHeaders http.Header
-	Duration        time.Duration
-	FirstTokenMs    *int
-	ImageCount      int
-	ImageSize       string
+	Duration         time.Duration
+	FirstTokenMs     *int
+	ImageCount       int
+	ImageSize        string
+	UpstreamEndpoint string // actual upstream endpoint when it differs from platform default
 }
 
 type OpenAIWSRetryMetricsSnapshot struct {
@@ -2050,6 +2052,13 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		// 透传分支只需要轻量提取字段，避免热路径全量 Unmarshal。
 		reasoningEffort := extractOpenAIReasoningEffortFromBody(body, reqModel)
 		return s.forwardOpenAIPassthrough(ctx, c, account, originalBody, reqModel, reasoningEffort, reqStream, startTime)
+	}
+
+	// APIKey accounts whose upstream does not confirm /v1/responses support
+	// support /v1/responses (DeepSeek, Kimi, GLM, etc.) are routed through
+	// the Chat Completions conversion path instead.
+	if account.Type == AccountTypeAPIKey && !openai_compat.IsResponsesSupportKnownConfirmed(account.Extra) {
+		return s.forwardResponsesAsChatCompletions(ctx, c, account, originalBody, "")
 	}
 
 	reqBody, err := getOpenAIRequestBodyMap(c, body)

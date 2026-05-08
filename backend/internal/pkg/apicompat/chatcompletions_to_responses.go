@@ -264,10 +264,11 @@ func chatToolToResponses(m ChatMessage) ([]ResponsesInputItem, error) {
 	if output == "" {
 		output = "(empty)"
 	}
+	outputJSON, _ := json.Marshal(output)
 	return []ResponsesInputItem{{
 		Type:   "function_call_output",
 		CallID: m.ToolCallID,
-		Output: output,
+		Output: outputJSON,
 	}}, nil
 }
 
@@ -282,10 +283,11 @@ func chatFunctionToResponses(m ChatMessage) ([]ResponsesInputItem, error) {
 	if output == "" {
 		output = "(empty)"
 	}
+	outputJSON, _ := json.Marshal(output)
 	return []ResponsesInputItem{{
 		Type:   "function_call_output",
 		CallID: m.Name,
-		Output: output,
+		Output: outputJSON,
 	}}, nil
 }
 
